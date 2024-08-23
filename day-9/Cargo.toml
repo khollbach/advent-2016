@@ -1,0 +1,10 @@
+[package]
+name = "day-9"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+
+[dev-dependencies]
+test-case = "3.3.1"
