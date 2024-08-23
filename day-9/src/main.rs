@@ -4,12 +4,23 @@ use anyhow::Result;
 
 /*
 
+part 1
+
 when you see a paren, scan until the next paren,
 and then split on 'x' to get the length and num_copies
 
 scan ahead that much, and output that many copies of it
 
 (when you're not hitting a paren, emit literally what you see)
+
+---
+
+part 2 plan
+
+just compute output length, don't actually emit characters
+
+to handle nested compression, recursively compute the would-be-decompressed
+length of the slice, and then multiply by the number of copies.
 
 */
 
@@ -22,13 +33,44 @@ fn main() -> Result<()> {
     assert!(!input.chars().any(|c| c.is_ascii_whitespace()));
 
     let mut decompressed = String::new();
-    decompress(&input, &mut decompressed);
+    decompress_v1(&input, &mut decompressed);
     dbg!(decompressed.len());
+
+    dbg!(decompressed_len_v2(&input));
 
     Ok(())
 }
 
-fn decompress(input: &str, output: &mut String) {
+fn decompressed_len_v2(input: &str) -> usize {
+    assert!(input.is_ascii());
+
+    let mut total = 0;
+
+    let mut i = 0;
+    while i < input.len() {
+        let c = get(input, i);
+
+        // Normal character; just increase count by 1.
+        if c != '(' {
+            total += 1;
+            i += 1;
+            continue;
+        }
+
+        let j = i + input[i..].find(')').unwrap();
+        let (len, num_repeats) = parse_nxm(&input[i + 1..=j - 1]);
+
+        let slice = &input[j + 1..][..len];
+        let inner_len = decompressed_len_v2(slice);
+        total += inner_len * num_repeats;
+
+        i = j + 1 + len;
+    }
+
+    total
+}
+
+fn decompress_v1(input: &str, output: &mut String) {
     assert!(input.is_ascii());
 
     let mut i = 0;
@@ -84,7 +126,7 @@ mod tests {
     #[test_case("X(8x2)(3x3)ABCY", "X(3x3)ABC(3x3)ABCY")]
     fn test_decompress(input: &str, expected: &str) {
         let mut actual = String::new();
-        decompress(input, &mut actual);
+        decompress_v1(input, &mut actual);
         assert_eq!(expected, actual);
     }
 }
